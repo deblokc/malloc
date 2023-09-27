@@ -6,7 +6,7 @@
 #    By: tnaton <marvin@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/09/26 15:22:40 by tnaton            #+#    #+#              #
-#    Updated: 2023/09/27 15:27:16 by tnaton           ###   ########.fr        #
+#    Updated: 2023/09/27 16:09:51 by tnaton           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -28,7 +28,7 @@ endif
 
 LIB_HOST = libft_malloc_$(HOSTTYPE).so
 
-CFLAGS = -Wall -Wextra -Werror -Wpedantic -O3 -g
+CFLAGS = -Wall -Wextra -Werror -Wpedantic -O3 -g -fPIC
 
 CC = gcc
 
@@ -38,7 +38,7 @@ $(LIB) : $(LIB_HOST)
 	ln -fs $(LIB_HOST) $(LIB)
 
 $(LIB_HOST) : $(OBJS) $(INC)
-	gcc -shared $(OBJS) -o $@
+	$(CC) $(CFLAGS) -shared $(OBJS) -o $@
 
 $(OBJS) : $(INC)
 
@@ -68,5 +68,4 @@ re: fclean all
 
 .PHONY: test
 test: all
-	$(CC) -g -I inc test/main.c $(LIB) 
-	./a.out
+	$(CC) -g -I inc test/main.c
