@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:46:34 by tnaton            #+#    #+#             */
-/*   Updated: 2023/09/27 17:49:25 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/09/27 18:24:11 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,6 @@ int main(void) {
 		putstr("Malloc renvoie NULL\n");
 	} else {
 		retest[0] = test[5];
-		if (write(1, &retest[0], 1)) {}
 		putstr("Allocated a million ! Vous voyez combien ça fait déjà un million larmina ?\n");
 //		free(retest);
 	}
