@@ -6,7 +6,7 @@
 #    By: tnaton <marvin@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/09/26 15:22:40 by tnaton            #+#    #+#              #
-#    Updated: 2023/09/26 16:23:59 by tnaton           ###   ########.fr        #
+#    Updated: 2023/09/27 15:27:16 by tnaton           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -38,7 +38,7 @@ $(LIB) : $(LIB_HOST)
 	ln -fs $(LIB_HOST) $(LIB)
 
 $(LIB_HOST) : $(OBJS) $(INC)
-	ar rcs $@ $?
+	gcc -shared $(OBJS) -o $@
 
 $(OBJS) : $(INC)
 

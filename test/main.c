@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:46:34 by tnaton            #+#    #+#             */
-/*   Updated: 2023/09/26 16:24:17 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/09/27 14:45:35 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,14 +24,14 @@ void putstr(char *str) {
 }
 
 int main(void) {
-	char *test = malloc(6 * sizeof(char));
+	char *test = ft_malloc(6 * sizeof(char));
 	memcpy(test, "test\n", 6);
 	putstr(test);
-	int *retest = malloc(1000000);
+	int *retest = ft_malloc(1000000);
 	retest[0] = test[5];
 	if (write(1, &retest[0], 1)) {}
-	free(retest);
-	free(test);
+	ft_free(retest);
+	ft_free(test);
 	printf("%d\n", getpagesize());
 	struct rlimit rlim;
 
