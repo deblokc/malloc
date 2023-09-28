@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/09/27 17:53:33 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/09/27 18:44:40 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,7 +81,7 @@ void	*add_chunk(t_page *page, size_t size) {
 }
 
 void	*malloc(size_t size) {
-	void	*ptr = NULL;
+/*	void	*ptr = NULL;
 	t_page	*last = NULL;
 	size_t	calculated_size = calculate_size(size);
 
@@ -105,7 +105,7 @@ void	*malloc(size_t size) {
 		}
 	}
 	return (ptr);
-	//return (mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+*/	return (mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 }
 
 void	free(void *p) {
