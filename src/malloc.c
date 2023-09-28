@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/09/27 18:44:40 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/09/28 16:03:38 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,7 +81,7 @@ void	*add_chunk(t_page *page, size_t size) {
 }
 
 void	*malloc(size_t size) {
-/*	void	*ptr = NULL;
+	void	*ptr = NULL;
 	t_page	*last = NULL;
 	size_t	calculated_size = calculate_size(size);
 
@@ -105,9 +105,40 @@ void	*malloc(size_t size) {
 		}
 	}
 	return (ptr);
-*/	return (mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+	//return (mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 }
 
 void	free(void *p) {
-	munmap(p, 0);
+	if (!p || !g_page) {
+		return ;
+	}
+
+	t_chunk	*ptr = ((t_chunk *)p - sizeof(t_chunk));
+	size_t	calculated_size = calculate_size(ptr->size - sizeof(t_chunk));
+
+	t_page	*before = NULL;
+	for (t_page *tmp = g_page; tmp; tmp = tmp->next) {
+		if (tmp->size == calculated_size) {
+			t_chunk *prev = NULL;
+			for (t_chunk *current = tmp->chunk; current; current = current->next) {
+				if (current == ptr) {
+					if (prev)
+						prev->next = current->next;
+					else
+						tmp->chunk = current->next;
+				}
+				prev = current;
+			}
+			if (!tmp->chunk) {
+				if (before) {
+					before->next = tmp->next;
+				} else {
+					g_page = tmp->next;
+				}
+				munmap(tmp, tmp->size);
+				break ;
+			}
+		}
+		before = tmp;
+	}
 }
