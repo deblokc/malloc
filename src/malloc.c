@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/09/28 16:03:38 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/09/29 12:29:05 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,47 @@
 t_page				*g_page = NULL;
 
 pthread_mutex_t		g_mutex_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static	int	ft_size(unsigned long long nb, int len)
+{
+	int	i;
+
+	if (!nb)
+		return (1);
+	i = 0;
+	while (nb)
+	{
+		nb /= len;
+		i++;
+	}
+	return (i);
+}
+
+
+void ft_itoa_base(unsigned long long nb, char *base_to)
+{
+	char	num[64];
+	int		size;
+	int		i;
+//	bzero(num, 64);
+
+	i = 1;
+	size = ft_size(nb, strlen(base_to));
+	if (!nb)
+	{
+		num[0] = base_to[0];
+		num[1] = '\0';
+		puts(num);
+	}
+	while (nb)
+	{
+		num[size - i] = base_to[nb % strlen(base_to)];
+		nb /= strlen(base_to);
+		i++;
+	}
+	num[size] = '\0';
+	puts(num);
+}
 
 /*
  *  If size + sizeof(t_chunk) <= SMALL we need to allocate enough for at least a 100 more of this size,
@@ -104,6 +145,7 @@ void	*malloc(size_t size) {
 			ptr = add_chunk(g_page, size);
 		}
 	}
+	ft_itoa_base((long)ptr, "0123456789abcdef");
 	return (ptr);
 	//return (mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 }
