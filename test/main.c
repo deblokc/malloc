@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:46:34 by tnaton            #+#    #+#             */
-/*   Updated: 2023/09/29 12:17:20 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/09/29 18:29:55 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,14 +17,64 @@
 #include <stdio.h>
 #include <sys/resource.h>
 
+static	int	ft_strlen(char *str) {
+	if (!str) {
+		return (0);
+	}
+	int i = 0;
+	for (; str[i]; i++) {}
+	return (i);
+}
+
+static	int	ft_size(unsigned long long nb, int len)
+{
+	int	i;
+
+	if (!nb)
+		return (1);
+	i = 0;
+	while (nb)
+	{
+		nb /= len;
+		i++;
+	}
+	return (i);
+}
+
 void putstr(char *str) {
 	for (size_t i = 0; i < strlen(str); i++) {
 		if (write(1, &str[i], 1)) {}
 	}
 }
 
+static void ft_itoa_base(unsigned long long nb, char *base_to)
+{
+	char	num[64];
+	int		size;
+	int		i;
+//	bzero(num, 64);
+
+	i = 1;
+	size = ft_size(nb, ft_strlen(base_to));
+	if (!nb)
+	{
+		num[0] = base_to[0];
+		num[1] = '\0';
+		puts(num);
+	}
+	while (nb)
+	{
+		num[size - i] = base_to[nb % ft_strlen(base_to)];
+		nb /= ft_strlen(base_to);
+		i++;
+	}
+	num[size] = '\0';
+	putstr(num);
+}
+
+
 int main(void) {
-	char *test = malloc(6 * sizeof(char));
+/*	char *test = malloc(6 * sizeof(char));
 	if (!test) {
 		putstr("Malloc renvoie NULL\n");
 	} else {
@@ -56,13 +106,18 @@ int main(void) {
 	printf("MEMLOCK hard : %ld\n", rlim.rlim_max);
 	
 	printf("#######################################\n");
-
 	char *a = malloc(10);
-	printf("a : %p\n", (void *)a);
-
 	char *b = malloc(10);
-	printf("b : %p\n", (void *)b);
 
 	free(a);
 	free(b);
+	printf("#######################################\n");
+*/
+	char *list[1024];
+	for ( int i = 0; i < 1024; i++) {
+		list[i] = malloc(1024);
+	}
+	for ( int i = 0; i < 1024; i++) {
+		free(list[i]);
+	}
 }
