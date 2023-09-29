@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/09/29 18:49:52 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/09/29 19:59:32 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,12 +126,12 @@ size_t	calculate_size(size_t size) {
 
 int	can_fit(size_t size, t_page *page) {
 	debug_str("int can_fit(size_t size, t_page *page);\n");
-	size_t	occupied_size = 0;
+	t_chunk *tmp = NULL;
 	if (page->chunk) {
-		for (t_chunk *tmp = page->chunk; tmp; tmp = tmp->next) {
-			occupied_size += tmp->size;
+		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
 		}
 	}
+	size_t occupied_size = ((char *)tmp + tmp->size) - (char *)(page);
 	debug_str("occupied space :");
 	debug_putnbr(occupied_size);
 	debug_str(" | ");
@@ -211,10 +211,11 @@ void	*add_chunk(t_page *page, size_t size) {
 		tmp->next = create_chunk((char *)tmp + tmp->size, size);
 		new = tmp->next;
 	}
-	return (new + sizeof(t_chunk));
+	return ((char *)new + sizeof(t_chunk));
 }
 
 void	*malloc(size_t size) {
+	pthread_mutex_lock(&g_mutex_lock);
 	void	*ptr = NULL;
 	t_page	*last = NULL;
 	size_t	calculated_size = calculate_size(size);
@@ -254,16 +255,33 @@ void	*malloc(size_t size) {
 	}
 	debug_ptr(ptr);
 	debug_str("\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+	pthread_mutex_unlock(&g_mutex_lock);
 	return (ptr);
 	//return (mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 }
 
 void	free(void *p) {
+	pthread_mutex_lock(&g_mutex_lock);
+	debug_str("###########INSIDE FREE##########\n");
 	if (!p || !g_page) {
+		if (!p) {
+			debug_str("NULL\n");
+		} else {
+			debug_str("not my pointer ¯\\_(ツ)_/¯\n");
+		}
+		debug_str("free had nothing to do\n");
+		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+		pthread_mutex_unlock(&g_mutex_lock);
 		return ;
 	}
+	debug_str("pointer to free\n");
+	debug_ptr(p);
+	debug_str("\n");
 
-	t_chunk	*ptr = ((t_chunk *)p - sizeof(t_chunk));
+	t_chunk	*ptr = (t_chunk *)((char *)p - sizeof(t_chunk));
+	debug_str("pointer's head\n");
+	debug_ptr(ptr);
+	debug_str("\n");
 	size_t	calculated_size = calculate_size(ptr->size - sizeof(t_chunk));
 
 	t_page	*before = NULL;
@@ -272,6 +290,7 @@ void	free(void *p) {
 			t_chunk *prev = NULL;
 			for (t_chunk *current = tmp->chunk; current; current = current->next) {
 				if (current == ptr) {
+					debug_str("Unlinking chunk from page\n");
 					if (prev)
 						prev->next = current->next;
 					else
@@ -280,6 +299,7 @@ void	free(void *p) {
 				prev = current;
 			}
 			if (!tmp->chunk) {
+				debug_str("No more chunk, removing whole page\n");
 				if (before) {
 					before->next = tmp->next;
 				} else {
@@ -291,4 +311,6 @@ void	free(void *p) {
 		}
 		before = tmp;
 	}
+	debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+	pthread_mutex_unlock(&g_mutex_lock);
 }
