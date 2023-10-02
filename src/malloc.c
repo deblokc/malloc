@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/02 17:19:39 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/02 17:42:42 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,13 +117,13 @@ static void debug_bin(void *ptr) {
 }
 
 /*
- *  If size + sizeof(t_chunk) <= SMALL we need to allocate enough for at least a 100 more of this size,
+ *  If size + SIZE_OF_CHUNK <= SMALL we need to allocate enough for at least a 100 more of this size,
  *  while being a multiple of getpagesize() (4096).
  */
 
 size_t	calculate_size(size_t size) {
 	size_t page_size = getpagesize();
-	size += sizeof(t_chunk);
+	size += SIZE_OF_CHUNK;
 	if (size <= TINY) {
 		size = TINY;
 	} else if (size <= SMALL) {
@@ -139,7 +139,7 @@ int	can_fit(size_t size, t_page *page) {
 	t_chunk *tmp = NULL;
 	if (page->chunk) {
 		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
-			if (tmp->free && (tmp->size - sizeof(t_chunk)) >= size) {
+			if (tmp->free && (tmp->size - SIZE_OF_CHUNK) >= size) {
 				return true;
 			}
 		}
@@ -154,7 +154,7 @@ int	can_fit(size_t size, t_page *page) {
 	debug_str(" | ");
 	debug_ptr((void *)(page->size - occupied_size));
 	debug_str("\n");
-	return ((page->size - occupied_size) > (size + sizeof(t_chunk)));
+	return ((page->size - occupied_size) > (size + SIZE_OF_CHUNK));
 }
 
 t_page	*add_page(size_t size) {
@@ -181,17 +181,21 @@ t_chunk	*create_chunk(void *addr, size_t size) {
 	debug_str("t_chunk	*create_chunk(void *addr, size_t size);\n");
 	t_chunk	*new;
 
-	new = (t_chunk *)addr;
 	if (((unsigned long long)addr & 15) == 0) {
 		debug_str("16 bits aligned\n");
 	} else {
-		debug_str("NOT ALIGNED\n");
+		debug_str("not aligned : ");
+		debug_ptr(addr);
+		addr = (void *)(((unsigned long)addr + 0x10) & ~0xf);
+		debug_str(" => ");
+		debug_ptr(addr);
+		debug_str("\n");
 	}
+	new = (t_chunk *)addr;
 	new->free = false;
-	debug_str("DEBUG MATH SIZE : ");
 	size = (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
 	debug_str("\n");
-	new->size = size + sizeof(t_chunk);
+	new->size = size + SIZE_OF_CHUNK;
 	debug_str("Chunk size : ");
 	debug_putnbr(new->size);
 	debug_str(" | ");
@@ -203,7 +207,7 @@ t_chunk	*create_chunk(void *addr, size_t size) {
 	debug_str("Chunk head       ");
 	debug_ptr(new);
 	debug_str("\nReturn data from ");
-	debug_ptr((char *)new + sizeof(t_chunk));
+	debug_ptr((char *)new + SIZE_OF_CHUNK);
 	debug_str("\nTo               ");
 	debug_ptr((char *)new + new->size);
 	debug_str("\n");
@@ -221,7 +225,7 @@ void	*add_chunk(t_page *page, size_t size) {
 		new = page->chunk;
 	} else {
 		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
-			if (tmp->free && (tmp->size - sizeof(t_chunk)) >= size) {
+			if (tmp->free && (tmp->size - SIZE_OF_CHUNK) >= size) {
 				debug_str("Found a freed chunk that can be reused at ");
 				debug_ptr((char *)tmp);
 				debug_str(" - ");
@@ -242,7 +246,7 @@ void	*add_chunk(t_page *page, size_t size) {
 				debug_str("Chunk head       ");
 				debug_ptr(new);
 				debug_str("\nReturn data from ");
-				debug_ptr((char *)new + sizeof(t_chunk));
+				debug_ptr((char *)new + SIZE_OF_CHUNK);
 				debug_str("\nTo               ");
 				debug_ptr((char *)new + new->size);
 				debug_str("\n");
@@ -253,13 +257,13 @@ void	*add_chunk(t_page *page, size_t size) {
 			debug_str("Found the end of chunk, chunk will be ");
 			debug_ptr((char *)tmp + tmp->size);
 			debug_str(" - ");
-			debug_ptr((char *)tmp + tmp->size + size + sizeof(t_chunk));
+			debug_ptr((char *)tmp + tmp->size + size + SIZE_OF_CHUNK);
 			debug_str("\n");
 			tmp->next = create_chunk((char *)tmp + tmp->size, size);
 			new = tmp->next;
 		}
 	}
-	return ((char *)new + sizeof(t_chunk));
+	return ((char *)new + SIZE_OF_CHUNK);
 }
 
 void	*malloc(size_t size) {
@@ -298,7 +302,7 @@ void	*malloc(size_t size) {
 			ptr = add_chunk(last->next, size);
 		} else {
 			debug_str("Size of t_chunk : ");
-			debug_putnbr(sizeof(t_chunk));
+			debug_putnbr(SIZE_OF_CHUNK);
 			debug_str("\n");
 			g_page = add_page(size);
 			ptr = add_chunk(g_page, size);
@@ -329,11 +333,11 @@ void	free(void *p) {
 	debug_ptr(p);
 	debug_str("\n");
 
-	t_chunk	*ptr = (t_chunk *)((char *)p - sizeof(t_chunk));
+	t_chunk	*ptr = (t_chunk *)((char *)p - SIZE_OF_CHUNK);
 	debug_str("pointer's head\n");
 	debug_ptr(ptr);
 	debug_str("\n");
-	size_t	calculated_size = calculate_size(ptr->size - sizeof(t_chunk));
+	size_t	calculated_size = calculate_size(ptr->size - SIZE_OF_CHUNK);
 
 	t_page	*before = NULL;
 	bool	remove_page = true;
@@ -373,12 +377,12 @@ void	*realloc(void *p, size_t size) {
 		free(p);
 		return (NULL);
 	}
-	t_chunk	*ptr = (t_chunk *)((char *)p - sizeof(t_chunk));
+	t_chunk	*ptr = (t_chunk *)((char *)p - SIZE_OF_CHUNK);
 	if (ptr->size >= size) {
 		return (p);
 	} else {
 		void *new = malloc(size);
-		memcpy(new, p, ptr->size - sizeof(t_chunk));
+		memcpy(new, p, ptr->size - SIZE_OF_CHUNK);
 		free(p);
 		return (new);
 	}

@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:31:27 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/02 17:08:46 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/02 17:43:16 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,8 +19,9 @@
 # include <stddef.h>
 # include <sys/mman.h>
 
+# define SIZE_OF_CHUNK ALIGN(sizeof(t_chunk))
+# define ALIGN(size) (((size) + (_Alignof(max_align_t) - 1)) & ~(_Alignof(max_align_t) - 1))
 
-# define ALIGN(size) (((size) + (_Alignof(max_align_t) - 1)) & ~(_Alignof(max_align_t) - 1));
 # define NUM	1000
 # define TINY	2048
 # define SMALL	4096
