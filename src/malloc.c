@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/09/29 19:59:32 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/02 17:19:39 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,10 +107,20 @@ static void debug_ptr(void *ptr) {
 #endif
 }
 
+static void debug_bin(void *ptr) {
+#ifdef DEBUG
+	if (write(1, "0b", 2)) {}
+	ft_itoa_base((unsigned long long)ptr, "01");
+#else
+	(void)ptr;
+#endif
+}
+
 /*
  *  If size + sizeof(t_chunk) <= SMALL we need to allocate enough for at least a 100 more of this size,
  *  while being a multiple of getpagesize() (4096).
  */
+
 size_t	calculate_size(size_t size) {
 	size_t page_size = getpagesize();
 	size += sizeof(t_chunk);
@@ -129,6 +139,9 @@ int	can_fit(size_t size, t_page *page) {
 	t_chunk *tmp = NULL;
 	if (page->chunk) {
 		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
+			if (tmp->free && (tmp->size - sizeof(t_chunk)) >= size) {
+				return true;
+			}
 		}
 	}
 	size_t occupied_size = ((char *)tmp + tmp->size) - (char *)(page);
@@ -174,11 +187,17 @@ t_chunk	*create_chunk(void *addr, size_t size) {
 	} else {
 		debug_str("NOT ALIGNED\n");
 	}
+	new->free = false;
+	debug_str("DEBUG MATH SIZE : ");
+	size = (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
+	debug_str("\n");
 	new->size = size + sizeof(t_chunk);
 	debug_str("Chunk size : ");
 	debug_putnbr(new->size);
 	debug_str(" | ");
 	debug_ptr((void *)new->size);
+	debug_str(" | ");
+	debug_bin((void *)new->size);
 	debug_str("\n");
 	new->next = NULL;
 	debug_str("Chunk head       ");
@@ -202,14 +221,43 @@ void	*add_chunk(t_page *page, size_t size) {
 		new = page->chunk;
 	} else {
 		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
+			if (tmp->free && (tmp->size - sizeof(t_chunk)) >= size) {
+				debug_str("Found a freed chunk that can be reused at ");
+				debug_ptr((char *)tmp);
+				debug_str(" - ");
+				debug_ptr((char *)tmp + tmp->size);
+				debug_str("\n");
+				tmp->free = false;
+				debug_str("Wanted size : ");
+				debug_putnbr(size);
+				debug_str(" | ");
+				debug_ptr((void *)size);
+				debug_str("\n");
+				debug_str("Got size    : ");
+				debug_putnbr(tmp->size);
+				debug_str(" | ");
+				debug_ptr((void* )(tmp->size));
+				debug_str("\n");
+				new = tmp;
+				debug_str("Chunk head       ");
+				debug_ptr(new);
+				debug_str("\nReturn data from ");
+				debug_ptr((char *)new + sizeof(t_chunk));
+				debug_str("\nTo               ");
+				debug_ptr((char *)new + new->size);
+				debug_str("\n");
+				break ;
+			}
 		}
-		debug_str("Found the end of chunk, chunk will be ");
-		debug_ptr((char *)tmp + tmp->size);
-		debug_str(" - ");
-		debug_ptr((char *)tmp + tmp->size + size + sizeof(t_chunk));
-		debug_str("\n");
-		tmp->next = create_chunk((char *)tmp + tmp->size, size);
-		new = tmp->next;
+		if (!new) {
+			debug_str("Found the end of chunk, chunk will be ");
+			debug_ptr((char *)tmp + tmp->size);
+			debug_str(" - ");
+			debug_ptr((char *)tmp + tmp->size + size + sizeof(t_chunk));
+			debug_str("\n");
+			tmp->next = create_chunk((char *)tmp + tmp->size, size);
+			new = tmp->next;
+		}
 	}
 	return ((char *)new + sizeof(t_chunk));
 }
@@ -249,6 +297,9 @@ void	*malloc(size_t size) {
 			last->next = add_page(size);
 			ptr = add_chunk(last->next, size);
 		} else {
+			debug_str("Size of t_chunk : ");
+			debug_putnbr(sizeof(t_chunk));
+			debug_str("\n");
 			g_page = add_page(size);
 			ptr = add_chunk(g_page, size);
 		}
@@ -285,20 +336,19 @@ void	free(void *p) {
 	size_t	calculated_size = calculate_size(ptr->size - sizeof(t_chunk));
 
 	t_page	*before = NULL;
+	bool	remove_page = true;
 	for (t_page *tmp = g_page; tmp; tmp = tmp->next) {
 		if (tmp->size == calculated_size) {
-			t_chunk *prev = NULL;
 			for (t_chunk *current = tmp->chunk; current; current = current->next) {
 				if (current == ptr) {
-					debug_str("Unlinking chunk from page\n");
-					if (prev)
-						prev->next = current->next;
-					else
-						tmp->chunk = current->next;
+					debug_str("Changing chunk status to freed\n");
+					current->free = true;
 				}
-				prev = current;
+				if (!current->free) {
+					remove_page = false;
+				}
 			}
-			if (!tmp->chunk) {
+			if (remove_page) {
 				debug_str("No more chunk, removing whole page\n");
 				if (before) {
 					before->next = tmp->next;
@@ -313,4 +363,23 @@ void	free(void *p) {
 	}
 	debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
 	pthread_mutex_unlock(&g_mutex_lock);
+}
+
+void	*realloc(void *p, size_t size) {
+	if (!p) {
+		return (malloc(size));
+	}
+	if (!size) {
+		free(p);
+		return (NULL);
+	}
+	t_chunk	*ptr = (t_chunk *)((char *)p - sizeof(t_chunk));
+	if (ptr->size >= size) {
+		return (p);
+	} else {
+		void *new = malloc(size);
+		memcpy(new, p, ptr->size - sizeof(t_chunk));
+		free(p);
+		return (new);
+	}
 }

@@ -6,9 +6,11 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:46:34 by tnaton            #+#    #+#             */
-/*   Updated: 2023/09/29 18:29:55 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/02 17:22:34 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+#pragma optimize("", off)
 
 #include "../inc/malloc.h"
 #include <string.h>
@@ -16,6 +18,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/resource.h>
+#include <stddef.h>
 
 static	int	ft_strlen(char *str) {
 	if (!str) {
@@ -114,10 +117,16 @@ int main(void) {
 	printf("#######################################\n");
 */
 	char *list[1024];
-	for ( int i = 0; i < 1024; i++) {
+/*	for ( int i = 0; i < 1024; i++) {
 		list[i] = malloc(1024);
+		if (((unsigned long long)list[i] & 15) == 0) {
+			printf("aligned\n");
+		} else {
+			printf("not aligned\n");
+		}
+	//	free(list[i]);
 	}
-	for ( int i = 0; i < 1024; i++) {
-		free(list[i]);
+*/	for ( int i = 1; i < 1024; i++) {
+		list[i] = malloc(i);
 	}
 }
