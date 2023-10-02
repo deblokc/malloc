@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/02 21:25:17 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/02 21:30:15 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,8 @@ static void ft_itoa_base(unsigned long long nb, char *base_to)
 	{
 		num[0] = base_to[0];
 		num[1] = '\0';
-		puts(num);
+		putstr(num);
+		return ;
 	}
 	while (nb)
 	{
