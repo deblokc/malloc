@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:31:27 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/02 17:43:16 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/02 20:27:55 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,6 @@ typedef struct s_page {
 
 typedef struct s_chunk {
 	size_t	size;
-	bool	free;
 	void	*next;
 } t_chunk;
 

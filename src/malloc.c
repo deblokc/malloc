@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/02 17:42:42 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/02 21:25:17 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -139,17 +139,22 @@ int	can_fit(size_t size, t_page *page) {
 	t_chunk *tmp = NULL;
 	if (page->chunk) {
 		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
-			if (tmp->free && (tmp->size - SIZE_OF_CHUNK) >= size) {
+			debug_ptr((void *)tmp->size);
+			if ((tmp->size & 1) && (tmp->size - 1 - SIZE_OF_CHUNK) >= size) {
 				return true;
 			}
 		}
 	}
+	debug_str("tmp : ");
+	debug_ptr((void *)tmp);
+	debug_str(" - ");
+	debug_putnbr(tmp->size);
+	debug_str("\n");
+	debug_str("page : ");
+	debug_ptr((void *)page);
+	debug_str("\n");
 	size_t occupied_size = ((char *)tmp + tmp->size) - (char *)(page);
-	debug_str("occupied space :");
-	debug_putnbr(occupied_size);
-	debug_str(" | ");
-	debug_ptr((void *)occupied_size);
-	debug_str("\navailable space :");
+	debug_str("never used space :");
 	debug_putnbr(page->size - occupied_size);
 	debug_str(" | ");
 	debug_ptr((void *)(page->size - occupied_size));
@@ -192,7 +197,6 @@ t_chunk	*create_chunk(void *addr, size_t size) {
 		debug_str("\n");
 	}
 	new = (t_chunk *)addr;
-	new->free = false;
 	size = (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
 	debug_str("\n");
 	new->size = size + SIZE_OF_CHUNK;
@@ -225,13 +229,13 @@ void	*add_chunk(t_page *page, size_t size) {
 		new = page->chunk;
 	} else {
 		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
-			if (tmp->free && (tmp->size - SIZE_OF_CHUNK) >= size) {
+			if (tmp->size & 1 && (tmp->size - 1 - SIZE_OF_CHUNK) >= size) {
 				debug_str("Found a freed chunk that can be reused at ");
 				debug_ptr((char *)tmp);
 				debug_str(" - ");
 				debug_ptr((char *)tmp + tmp->size);
 				debug_str("\n");
-				tmp->free = false;
+				tmp->size &= ~1;
 				debug_str("Wanted size : ");
 				debug_putnbr(size);
 				debug_str(" | ");
@@ -259,7 +263,7 @@ void	*add_chunk(t_page *page, size_t size) {
 			debug_str(" - ");
 			debug_ptr((char *)tmp + tmp->size + size + SIZE_OF_CHUNK);
 			debug_str("\n");
-			tmp->next = create_chunk((char *)tmp + tmp->size, size);
+			tmp->next = create_chunk((char *)tmp + (tmp->size), size);
 			new = tmp->next;
 		}
 	}
@@ -346,9 +350,9 @@ void	free(void *p) {
 			for (t_chunk *current = tmp->chunk; current; current = current->next) {
 				if (current == ptr) {
 					debug_str("Changing chunk status to freed\n");
-					current->free = true;
+					current->size += 1;
 				}
-				if (!current->free) {
+				if (!(current->size & 1)) {
 					remove_page = false;
 				}
 			}
