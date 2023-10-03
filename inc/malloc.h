@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:31:27 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/02 20:27:55 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/03 12:19:37 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,9 +22,9 @@
 # define SIZE_OF_CHUNK ALIGN(sizeof(t_chunk))
 # define ALIGN(size) (((size) + (_Alignof(max_align_t) - 1)) & ~(_Alignof(max_align_t) - 1))
 
-# define NUM	1000
-# define TINY	2048
-# define SMALL	4096
+# define NUM	100
+# define TINY	256
+# define SMALL	1024
 
 typedef struct s_page {
 	size_t	size;

@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/02 21:30:15 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/03 12:39:03 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -146,15 +146,19 @@ int	can_fit(size_t size, t_page *page) {
 			}
 		}
 	}
-	debug_str("tmp : ");
+	debug_str("tmp  : ");
 	debug_ptr((void *)tmp);
 	debug_str(" - ");
 	debug_putnbr(tmp->size);
 	debug_str("\n");
 	debug_str("page : ");
 	debug_ptr((void *)page);
+	debug_str(" - ");
+	debug_putnbr(page->size);
 	debug_str("\n");
 	size_t occupied_size = ((char *)tmp + tmp->size) - (char *)(page);
+	debug_str("what : ");
+	debug_putnbr(occupied_size);
 	debug_str("never used space :");
 	debug_putnbr(page->size - occupied_size);
 	debug_str(" | ");
@@ -268,6 +272,9 @@ void	*add_chunk(t_page *page, size_t size) {
 			new = tmp->next;
 		}
 	}
+	debug_str("************\n");
+	debug_putnbr(new->size);
+	debug_str("\n");
 	return ((char *)new + SIZE_OF_CHUNK);
 }
 
@@ -287,6 +294,12 @@ void	*malloc(size_t size) {
 	
 	// iterate through pages 
 	for (t_page *tmp = g_page; tmp; tmp = tmp->next) {
+		debug_str("?\n");
+		debug_ptr(tmp);
+		debug_str("\n");
+		debug_putnbr(tmp->size);
+		debug_str("\n");
+		debug_str("()\n");
 		if (tmp->size == calculated_size) {
 			debug_str("page of same size : ");
 			debug_ptr((char *)tmp);
@@ -299,6 +312,7 @@ void	*malloc(size_t size) {
 			}
 		}
 		last = tmp;
+		debug_str("!\n");
 	}
 	if (!ptr) {
 		debug_str("Did not find any available page, adding one\n");
