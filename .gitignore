@@ -1,3 +1,4 @@
 *.so
 obj
 a.out
+.nfs*

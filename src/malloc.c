@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/03 12:39:03 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/03 18:27:06 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,7 +124,7 @@ static void debug_bin(void *ptr) {
 
 size_t	calculate_size(size_t size) {
 	size_t page_size = getpagesize();
-	size += SIZE_OF_CHUNK;
+	size = SIZE_OF_CHUNK + sizeof(t_page) + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
 	if (size <= TINY) {
 		size = TINY;
 	} else if (size <= SMALL) {
@@ -140,26 +140,35 @@ int	can_fit(size_t size, t_page *page) {
 	t_chunk *tmp = NULL;
 	if (page->chunk) {
 		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
-			debug_ptr((void *)tmp->size);
 			if ((tmp->size & 1) && (tmp->size - 1 - SIZE_OF_CHUNK) >= size) {
 				return true;
 			}
 		}
 	}
+	size_t tmp_size = tmp->size;
+	if (tmp->size & 1) {
+		tmp_size = tmp->size - 1;
+	}
 	debug_str("tmp  : ");
 	debug_ptr((void *)tmp);
 	debug_str(" - ");
-	debug_putnbr(tmp->size);
+	debug_putnbr(tmp_size);
+	debug_str(" - ");
+	debug_ptr((void *)tmp_size);
 	debug_str("\n");
 	debug_str("page : ");
 	debug_ptr((void *)page);
 	debug_str(" - ");
 	debug_putnbr(page->size);
 	debug_str("\n");
-	size_t occupied_size = ((char *)tmp + tmp->size) - (char *)(page);
+	size_t occupied_size = ((char *)tmp + tmp_size) - (char *)(page);
 	debug_str("what : ");
+	debug_ptr((char *)tmp + tmp_size);
+	debug_str(" - ");
+	debug_ptr((char *)page);
+	debug_str(" = ");
 	debug_putnbr(occupied_size);
-	debug_str("never used space :");
+	debug_str("\nnever used space :");
 	debug_putnbr(page->size - occupied_size);
 	debug_str(" | ");
 	debug_ptr((void *)(page->size - occupied_size));
@@ -175,10 +184,14 @@ t_page	*add_page(size_t size) {
 	debug_putnbr(size_to_map);
 	debug_str("  |  ");
 	new = mmap(NULL, size_to_map, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if ((long)*(long *)new == -1) {
+		debug_str("FATAL ERROR MMAP FAILED\n");
+	}
 	debug_ptr((void *)size_to_map);
 	new->size = size_to_map;
 	new->next = NULL;
 	new->chunk = NULL;
+	memset((char *)new + sizeof(t_page), '*', size_to_map - sizeof(t_page));
 	debug_str("\nAllocated from ");
 	debug_ptr((char *)new);
 	debug_str("\nTo             ");
@@ -238,7 +251,7 @@ void	*add_chunk(t_page *page, size_t size) {
 				debug_str("Found a freed chunk that can be reused at ");
 				debug_ptr((char *)tmp);
 				debug_str(" - ");
-				debug_ptr((char *)tmp + tmp->size);
+				debug_ptr((char *)tmp + tmp->size - 1);
 				debug_str("\n");
 				tmp->size &= ~1;
 				debug_str("Wanted size : ");
@@ -263,14 +276,24 @@ void	*add_chunk(t_page *page, size_t size) {
 			}
 		}
 		if (!new) {
+			size_t tmp_size = tmp->size;
+			if (tmp_size & 1) {
+				tmp_size -= 1;
+			}
 			debug_str("Found the end of chunk, chunk will be ");
-			debug_ptr((char *)tmp + tmp->size);
+			debug_ptr((char *)tmp + tmp_size);
 			debug_str(" - ");
-			debug_ptr((char *)tmp + tmp->size + size + SIZE_OF_CHUNK);
+			debug_ptr((char *)tmp + tmp_size + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t)) + SIZE_OF_CHUNK);
 			debug_str("\n");
-			tmp->next = create_chunk((char *)tmp + (tmp->size), size);
+			tmp->next = create_chunk((char *)tmp + (tmp_size), size);
 			new = tmp->next;
 		}
+	}
+	if ((char *)new + new->size > (char *)page + page->size) {
+		debug_str("FATAL ERROR CHUNK GOES BEYOND ALLOCATED AREA\n");
+	}
+	if (size > new->size - SIZE_OF_CHUNK) {
+		debug_str("FATAL ERROR NOT ENOUGH SPACE ALLOCATED\n");
 	}
 	debug_str("************\n");
 	debug_putnbr(new->size);
@@ -278,14 +301,20 @@ void	*add_chunk(t_page *page, size_t size) {
 	return ((char *)new + SIZE_OF_CHUNK);
 }
 
-void	*malloc(size_t size) {
-	pthread_mutex_lock(&g_mutex_lock);
+void	*mutexless_malloc(size_t size) {
 	void	*ptr = NULL;
 	t_page	*last = NULL;
 	size_t	calculated_size = calculate_size(size);
 	debug_str("###########INSIDE MALLOC##########\n");
 	debug_str("Wanted size : ");
 	debug_putnbr(size);
+	if (size < TINY) {
+		debug_str("\nSize will be TINY : ");
+		debug_putnbr(TINY);
+	} else if (size < SMALL) {
+		debug_str("\nSize will be SMALL : ");
+		debug_putnbr(SMALL);
+	}
 	debug_str("\nPage size corresponding : ");
 	debug_putnbr(calculated_size);
 	debug_str(" | ");
@@ -294,12 +323,6 @@ void	*malloc(size_t size) {
 	
 	// iterate through pages 
 	for (t_page *tmp = g_page; tmp; tmp = tmp->next) {
-		debug_str("?\n");
-		debug_ptr(tmp);
-		debug_str("\n");
-		debug_putnbr(tmp->size);
-		debug_str("\n");
-		debug_str("()\n");
 		if (tmp->size == calculated_size) {
 			debug_str("page of same size : ");
 			debug_ptr((char *)tmp);
@@ -312,7 +335,6 @@ void	*malloc(size_t size) {
 			}
 		}
 		last = tmp;
-		debug_str("!\n");
 	}
 	if (!ptr) {
 		debug_str("Did not find any available page, adding one\n");
@@ -328,14 +350,22 @@ void	*malloc(size_t size) {
 		}
 	}
 	debug_ptr(ptr);
+	if (((unsigned long)ptr & 15) != 0) {
+		debug_str("FATAL ERROR returned ptr is NOT ALIGNED\n");
+	}
 	debug_str("\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
-	pthread_mutex_unlock(&g_mutex_lock);
 	return (ptr);
 	//return (mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 }
 
-void	free(void *p) {
+void	*malloc(size_t size) {
 	pthread_mutex_lock(&g_mutex_lock);
+	void *p = mutexless_malloc(size);
+	pthread_mutex_unlock(&g_mutex_lock);
+	return (p);
+}
+
+void	mutexless_free(void *p) {
 	debug_str("###########INSIDE FREE##########\n");
 	if (!p || !g_page) {
 		if (!p) {
@@ -345,7 +375,6 @@ void	free(void *p) {
 		}
 		debug_str("free had nothing to do\n");
 		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
-		pthread_mutex_unlock(&g_mutex_lock);
 		return ;
 	}
 	debug_str("pointer to free\n");
@@ -368,7 +397,9 @@ void	free(void *p) {
 					current->size += 1;
 				}
 				if (!(current->size & 1)) {
+					debug_str("Still used blocks, will not remove page\n");
 					remove_page = false;
+					break ;
 				}
 			}
 			if (remove_page) {
@@ -385,24 +416,66 @@ void	free(void *p) {
 		before = tmp;
 	}
 	debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+}
+
+void free(void *p) {
+	pthread_mutex_lock(&g_mutex_lock);
+	mutexless_free(p);
 	pthread_mutex_unlock(&g_mutex_lock);
 }
 
 void	*realloc(void *p, size_t size) {
+	pthread_mutex_lock(&g_mutex_lock);
+	debug_str("###########INSIDE REALLOC##########\n");
 	if (!p) {
-		return (malloc(size));
+		debug_str("No ptr, just allocating\n");
+		void *ptr = mutexless_malloc(size);
+		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+		pthread_mutex_unlock(&g_mutex_lock);
+		return (ptr);
 	}
 	if (!size) {
-		free(p);
+		debug_str("No size, freeing the ptr\n");
+		mutexless_free(p);
+		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+		pthread_mutex_unlock(&g_mutex_lock);
 		return (NULL);
 	}
+	debug_str("p   : ");
+	debug_ptr(p);
+	debug_str("\nptr : ");
 	t_chunk	*ptr = (t_chunk *)((char *)p - SIZE_OF_CHUNK);
+	debug_ptr(ptr);
+	debug_str("\n");
+	if (!ptr->size) {
+		debug_str("FATAL ERROR NOT MY POINTER\n");
+		debug_str("Probably not my pointer, FOCK OFF M8\n");
+		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+		pthread_mutex_unlock(&g_mutex_lock);
+		return (NULL);
+	}
 	if (ptr->size >= size) {
+		debug_str("Downgrading, no need to change ptr\n");
+		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+		pthread_mutex_unlock(&g_mutex_lock);
 		return (p);
 	} else {
-		void *new = malloc(size);
+		debug_str("Upgrading from ");
+		debug_putnbr(ptr->size);
+		debug_str(" to ");
+		debug_putnbr(size);
+		debug_str(", changing ptr\n");
+		void *new = mutexless_malloc(size);
+		debug_str("New ptr : ");
+		debug_ptr(new);
+		debug_str("\n");
 		memcpy(new, p, ptr->size - SIZE_OF_CHUNK);
-		free(p);
+		debug_str("Freeing old ptr : ");
+		debug_ptr(p);
+		debug_str("\n");
+		mutexless_free(p);
+		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+		pthread_mutex_unlock(&g_mutex_lock);
 		return (new);
 	}
 }

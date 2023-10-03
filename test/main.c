@@ -6,11 +6,9 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:46:34 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/02 17:22:34 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/03 17:47:22 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-#pragma optimize("", off)
 
 #include "../inc/malloc.h"
 #include <string.h>
@@ -115,9 +113,9 @@ int main(void) {
 	free(a);
 	free(b);
 	printf("#######################################\n");
-*/
+
 	char *list[1024];
-/*	for ( int i = 0; i < 1024; i++) {
+	for ( int i = 0; i < 1024; i++) {
 		list[i] = malloc(1024);
 		if (((unsigned long long)list[i] & 15) == 0) {
 			printf("aligned\n");
@@ -126,7 +124,22 @@ int main(void) {
 		}
 	//	free(list[i]);
 	}
-*/	for ( int i = 1; i < 1024; i++) {
+	for ( int i = 1; i < 1024; i++) {
 		list[i] = malloc(i);
+		memset(list[i], 'a', i);
+	}
+	getenv("TMPDIR");
+	getenv("PDIR");
+
+	*/
+	malloc(1);
+	for (size_t i = 1; i < 5000; i += 16) {
+		void *data = malloc(i);
+		ft_itoa_base((unsigned long long)data, "0123456789abcdef");
+		putstr("\n");
+		ft_itoa_base(i, "0123456789");
+		putstr("\n");
+		memset(data, 'a', i);
+		free(data);
 	}
 }
