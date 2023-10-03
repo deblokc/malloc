@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/03 18:27:06 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/03 20:00:28 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,7 +136,7 @@ size_t	calculate_size(size_t size) {
 }
 
 int	can_fit(size_t size, t_page *page) {
-	debug_str("int can_fit(size_t size, t_page *page);\n");
+//	debug_str("int can_fit(size_t size, t_page *page);\n");
 	t_chunk *tmp = NULL;
 	if (page->chunk) {
 		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
@@ -149,7 +149,7 @@ int	can_fit(size_t size, t_page *page) {
 	if (tmp->size & 1) {
 		tmp_size = tmp->size - 1;
 	}
-	debug_str("tmp  : ");
+/*	debug_str("tmp  : ");
 	debug_ptr((void *)tmp);
 	debug_str(" - ");
 	debug_putnbr(tmp_size);
@@ -161,8 +161,8 @@ int	can_fit(size_t size, t_page *page) {
 	debug_str(" - ");
 	debug_putnbr(page->size);
 	debug_str("\n");
-	size_t occupied_size = ((char *)tmp + tmp_size) - (char *)(page);
-	debug_str("what : ");
+*/	size_t occupied_size = ((char *)tmp + tmp_size) - (char *)(page);
+/*	debug_str("what : ");
 	debug_ptr((char *)tmp + tmp_size);
 	debug_str(" - ");
 	debug_ptr((char *)page);
@@ -173,7 +173,7 @@ int	can_fit(size_t size, t_page *page) {
 	debug_str(" | ");
 	debug_ptr((void *)(page->size - occupied_size));
 	debug_str("\n");
-	return ((page->size - occupied_size) > (size + SIZE_OF_CHUNK));
+*/	return ((page->size - occupied_size) > (size + SIZE_OF_CHUNK));
 }
 
 t_page	*add_page(size_t size) {
@@ -276,6 +276,13 @@ void	*add_chunk(t_page *page, size_t size) {
 			}
 		}
 		if (!new) {
+			debug_str("tmp : ");
+			debug_ptr(tmp);
+			debug_str(" - ");
+			debug_putnbr(tmp->size);
+			debug_str(" | ");
+			debug_ptr((void *)tmp->size);
+			debug_str("\n");
 			size_t tmp_size = tmp->size;
 			if (tmp_size & 1) {
 				tmp_size -= 1;
@@ -308,10 +315,12 @@ void	*mutexless_malloc(size_t size) {
 	debug_str("###########INSIDE MALLOC##########\n");
 	debug_str("Wanted size : ");
 	debug_putnbr(size);
-	if (size < TINY) {
+	size_t realsize = SIZE_OF_CHUNK + sizeof(t_page) + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
+	
+	if (realsize < TINY) {
 		debug_str("\nSize will be TINY : ");
 		debug_putnbr(TINY);
-	} else if (size < SMALL) {
+	} else if (realsize < SMALL) {
 		debug_str("\nSize will be SMALL : ");
 		debug_putnbr(SMALL);
 	}
@@ -324,12 +333,12 @@ void	*mutexless_malloc(size_t size) {
 	// iterate through pages 
 	for (t_page *tmp = g_page; tmp; tmp = tmp->next) {
 		if (tmp->size == calculated_size) {
-			debug_str("page of same size : ");
-			debug_ptr((char *)tmp);
-			debug_str(" - ");
-			debug_ptr((char *)tmp + tmp->size);
-			debug_str("\n");
 			if (can_fit(size, tmp)) {
+				debug_str("page : ");
+				debug_ptr((char *)tmp);
+				debug_str(" - ");
+				debug_ptr((char *)tmp + tmp->size);
+				debug_str("\n");
 				ptr = add_chunk(tmp, size);
 				break ;
 			}
@@ -386,20 +395,23 @@ void	mutexless_free(void *p) {
 	debug_ptr(ptr);
 	debug_str("\n");
 	size_t	calculated_size = calculate_size(ptr->size - SIZE_OF_CHUNK);
-
+	debug_str("Page size corresponding : ");
+	debug_putnbr(calculated_size);
+	debug_str(" | ");
+	debug_ptr((void *)calculated_size);
+	debug_str("\n");
 	t_page	*before = NULL;
-	bool	remove_page = true;
 	for (t_page *tmp = g_page; tmp; tmp = tmp->next) {
+		bool	remove_page = true;
 		if (tmp->size == calculated_size) {
 			for (t_chunk *current = tmp->chunk; current; current = current->next) {
 				if (current == ptr) {
 					debug_str("Changing chunk status to freed\n");
 					current->size += 1;
 				}
-				if (!(current->size & 1)) {
+				if (remove_page && !(current->size & 1)) {
 					debug_str("Still used blocks, will not remove page\n");
 					remove_page = false;
-					break ;
 				}
 			}
 			if (remove_page) {
@@ -478,4 +490,19 @@ void	*realloc(void *p, size_t size) {
 		pthread_mutex_unlock(&g_mutex_lock);
 		return (new);
 	}
+}
+
+void	*calloc(size_t nmemb, size_t size) {
+	pthread_mutex_lock(&g_mutex_lock);
+	debug_str("###########INSIDE CALLOC##########\n");
+	void *p = mutexless_malloc(nmemb * size);
+	if (!p) {
+		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+		pthread_mutex_unlock(&g_mutex_lock);
+		return (NULL);
+	}
+	bzero(p, nmemb * size);
+	debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+	pthread_mutex_unlock(&g_mutex_lock);
+	return (p);
 }
