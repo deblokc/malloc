@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/04 19:43:43 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/04 20:37:26 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -195,7 +195,6 @@ t_page	*add_page(size_t size) {
 	new->size = size_to_map;
 	new->next = NULL;
 	new->chunk = NULL;
-	memset((char *)new + sizeof(t_page), '*', size_to_map - sizeof(t_page));
 	debug_str("\nAllocated from ");
 	debug_ptr((char *)new);
 	debug_str("\nTo             ");
