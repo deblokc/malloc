@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/03 20:00:28 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/04 19:43:43 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,8 @@
 t_page				*g_page = NULL;
 
 pthread_mutex_t		g_mutex_lock = PTHREAD_MUTEX_INITIALIZER;
+
+size_t				g_now = 0;
 
 #ifdef DEBUG
 static	size_t	ft_strlen(char *str) {
@@ -117,6 +119,7 @@ static void debug_bin(void *ptr) {
 #endif
 }
 
+
 /*
  *  If size + SIZE_OF_CHUNK <= SMALL we need to allocate enough for at least a 100 more of this size,
  *  while being a multiple of getpagesize() (4096).
@@ -184,8 +187,9 @@ t_page	*add_page(size_t size) {
 	debug_putnbr(size_to_map);
 	debug_str("  |  ");
 	new = mmap(NULL, size_to_map, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if ((long)*(long *)new == -1) {
+	if ((void *)new == MAP_FAILED) {
 		debug_str("FATAL ERROR MMAP FAILED\n");
+		return NULL;
 	}
 	debug_ptr((void *)size_to_map);
 	new->size = size_to_map;
@@ -302,7 +306,6 @@ void	*add_chunk(t_page *page, size_t size) {
 	if (size > new->size - SIZE_OF_CHUNK) {
 		debug_str("FATAL ERROR NOT ENOUGH SPACE ALLOCATED\n");
 	}
-	debug_str("************\n");
 	debug_putnbr(new->size);
 	debug_str("\n");
 	return ((char *)new + SIZE_OF_CHUNK);
@@ -313,6 +316,10 @@ void	*mutexless_malloc(size_t size) {
 	t_page	*last = NULL;
 	size_t	calculated_size = calculate_size(size);
 	debug_str("###########INSIDE MALLOC##########\n");
+	debug_str("g_now : ");
+	debug_putnbr(g_now);
+	g_now++;
+	debug_str("\n");
 	debug_str("Wanted size : ");
 	debug_putnbr(size);
 	size_t realsize = SIZE_OF_CHUNK + sizeof(t_page) + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
@@ -349,12 +356,21 @@ void	*mutexless_malloc(size_t size) {
 		debug_str("Did not find any available page, adding one\n");
 		if (last) {
 			last->next = add_page(size);
+			debug_str("hum : ");
+			debug_ptr(&last->next);
+			debug_str("\n");
+			if (!last->next) {
+				return NULL;
+			}
 			ptr = add_chunk(last->next, size);
 		} else {
 			debug_str("Size of t_chunk : ");
 			debug_putnbr(SIZE_OF_CHUNK);
 			debug_str("\n");
 			g_page = add_page(size);
+			if (!g_page) {
+				return (NULL);
+			}
 			ptr = add_chunk(g_page, size);
 		}
 	}
@@ -372,6 +388,10 @@ void	*malloc(size_t size) {
 	void *p = mutexless_malloc(size);
 	pthread_mutex_unlock(&g_mutex_lock);
 	return (p);
+}
+
+void	*_malloc(size_t size) {
+	return (malloc(size));
 }
 
 void	mutexless_free(void *p) {
@@ -394,6 +414,11 @@ void	mutexless_free(void *p) {
 	debug_str("pointer's head\n");
 	debug_ptr(ptr);
 	debug_str("\n");
+	debug_str("size : ");
+	debug_putnbr(ptr->size);
+	debug_str(" | ");
+	debug_ptr((void *)ptr->size);
+	debug_str("\n");
 	size_t	calculated_size = calculate_size(ptr->size - SIZE_OF_CHUNK);
 	debug_str("Page size corresponding : ");
 	debug_putnbr(calculated_size);
@@ -401,6 +426,7 @@ void	mutexless_free(void *p) {
 	debug_ptr((void *)calculated_size);
 	debug_str("\n");
 	t_page	*before = NULL;
+	bool	freed = false;
 	for (t_page *tmp = g_page; tmp; tmp = tmp->next) {
 		bool	remove_page = true;
 		if (tmp->size == calculated_size) {
@@ -408,6 +434,7 @@ void	mutexless_free(void *p) {
 				if (current == ptr) {
 					debug_str("Changing chunk status to freed\n");
 					current->size += 1;
+					freed = true;
 				}
 				if (remove_page && !(current->size & 1)) {
 					debug_str("Still used blocks, will not remove page\n");
@@ -426,6 +453,18 @@ void	mutexless_free(void *p) {
 			}
 		}
 		before = tmp;
+	}
+	if (!freed) {
+		debug_str("FATAL ERROR COULD NOT FREE\n");
+		debug_str("trying to free anyway\n");
+		for (t_page *tmp = g_page; tmp; tmp = tmp->next) {
+			for (t_chunk *current = tmp->chunk; current; current = current->next) {
+				if (current == ptr) {
+					debug_str("PFIOU FOUND IT !\n");
+					current->size += 1;
+				}
+			}
+		}
 	}
 	debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
 }
@@ -458,6 +497,10 @@ void	*realloc(void *p, size_t size) {
 	debug_str("\nptr : ");
 	t_chunk	*ptr = (t_chunk *)((char *)p - SIZE_OF_CHUNK);
 	debug_ptr(ptr);
+	debug_str("\nold size : ");
+	debug_putnbr(ptr->size);
+	debug_str("\nnew size : ");
+	debug_putnbr(size);
 	debug_str("\n");
 	if (!ptr->size) {
 		debug_str("FATAL ERROR NOT MY POINTER\n");
@@ -466,7 +509,7 @@ void	*realloc(void *p, size_t size) {
 		pthread_mutex_unlock(&g_mutex_lock);
 		return (NULL);
 	}
-	if (ptr->size >= size) {
+	if (ptr->size - SIZE_OF_CHUNK >= size) {
 		debug_str("Downgrading, no need to change ptr\n");
 		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
 		pthread_mutex_unlock(&g_mutex_lock);

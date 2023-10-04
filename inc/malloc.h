@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:31:27 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/03 19:10:48 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/04 19:46:07 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@
 # define ALIGN(size) (((size) + (_Alignof(max_align_t) - 1)) & ~(_Alignof(max_align_t) - 1))
 
 # define NUM	100
-# define TINY	256
+# define TINY	512
 # define SMALL	1024
 
 typedef struct s_page {
@@ -43,6 +43,7 @@ extern pthread_mutex_t	g_malloc_mutex;
 
 void *realloc(void *p, size_t size);
 void *malloc(size_t size);
+void *_malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
 void free(void *p);
 

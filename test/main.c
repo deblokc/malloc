@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:46:34 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/03 17:47:22 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/04 17:16:46 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,6 +132,7 @@ int main(void) {
 	getenv("PDIR");
 
 	*/
+	/*
 	malloc(1);
 	for (size_t i = 1; i < 5000; i += 16) {
 		void *data = malloc(i);
@@ -141,5 +142,46 @@ int main(void) {
 		putstr("\n");
 		memset(data, 'a', i);
 		free(data);
+	}
+
+
+	*/
+#define MAX_ALLOC 5000
+	void *data[MAX_ALLOC];
+
+	for (size_t len = 1; len < MAX_ALLOC; len += 3)
+	{
+		char cmp[len];
+
+		memset(cmp, 'a', len);
+
+		for (size_t i = 1; i < MAX_ALLOC; i += 3)
+		{
+			data[i] = malloc(len);
+
+			memset(data[i], 'a', len);
+
+			if ((unsigned long)data[i] % 16 != 0)
+			{
+				return -1;
+			}
+		}
+
+		for (size_t i = 1; i < MAX_ALLOC; i += 3)
+		{
+			if (memcmp(cmp, data[i], len) != 0)
+			{
+				return -1;
+			}
+		}
+
+		for (size_t i = 1; i < MAX_ALLOC; i += 3)
+		{
+			if (memcmp(cmp, data[i], len) != 0)
+			{
+				return -1;
+			}
+			free(data[i]);
+		}
 	}
 }
