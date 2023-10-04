@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:31:27 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/04 19:46:07 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/04 19:51:01 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,8 +23,8 @@
 # define ALIGN(size) (((size) + (_Alignof(max_align_t) - 1)) & ~(_Alignof(max_align_t) - 1))
 
 # define NUM	100
-# define TINY	512
-# define SMALL	1024
+# define TINY	256
+# define SMALL	4096
 
 typedef struct s_page {
 	size_t	size;
