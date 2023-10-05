@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 18:43:00 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 19:11:21 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -252,7 +252,15 @@ static void	*add_chunk(t_page *page, size_t size) {
 		page->chunk = create_chunk((char *)page + sizeof(t_page), size);
 		new = page->chunk;
 	} else {
-		for (tmp = page->chunk; tmp->next; tmp = tmp->next) {
+		t_chunk	*prev = page->chunk;
+		for (tmp = page->chunk; tmp; tmp = tmp->next) {
+			if (tmp->size & 1) {
+				debug_str("?????\n");
+				debug_putnbr(size);
+				debug_str(" VS ");
+				debug_putnbr(tmp->size - 1 - SIZE_OF_CHUNK);
+				debug_str("\n");
+			}
 			if (tmp->size & 1 && (tmp->size - 1 - SIZE_OF_CHUNK) >= size) {
 				debug_str("Found a freed chunk that can be reused at ");
 				debug_ptr((char *)tmp);
@@ -296,26 +304,27 @@ static void	*add_chunk(t_page *page, size_t size) {
 				debug_str("\n");
 				break ;
 			}
+			prev = tmp;
 		}
 		if (!new) {
-			debug_str("tmp : ");
-			debug_ptr(tmp);
+			debug_str("prev : ");
+			debug_ptr(prev);
 			debug_str(" - ");
-			debug_putnbr(tmp->size);
+			debug_putnbr(prev->size);
 			debug_str(" | ");
-			debug_ptr((void *)tmp->size);
+			debug_ptr((void *)prev->size);
 			debug_str("\n");
-			size_t tmp_size = tmp->size;
-			if (tmp_size & 1) {
-				tmp_size -= 1;
+			size_t prev_size = prev->size;
+			if (prev_size & 1) {
+				prev_size -= 1;
 			}
 			debug_str("Found the end of chunk, chunk will be ");
-			debug_ptr((char *)tmp + tmp_size);
+			debug_ptr((char *)prev + prev_size);
 			debug_str(" - ");
-			debug_ptr((char *)tmp + tmp_size + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t)) + SIZE_OF_CHUNK);
+			debug_ptr((char *)prev + prev_size + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t)) + SIZE_OF_CHUNK);
 			debug_str("\n");
-			tmp->next = create_chunk((char *)tmp + (tmp_size), size);
-			new = tmp->next;
+			prev->next = create_chunk((char *)prev + (prev_size), size);
+			new = prev->next;
 		}
 	}
 	if ((char *)new + new->size > (char *)page + page->size) {
