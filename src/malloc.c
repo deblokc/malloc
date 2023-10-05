@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 14:27:33 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 15:59:39 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -256,18 +256,34 @@ void	*add_chunk(t_page *page, size_t size) {
 				debug_str(" - ");
 				debug_ptr((char *)tmp + tmp->size - 1);
 				debug_str("\n");
-				tmp->size &= ~1;
-				debug_str("Wanted size : ");
-				debug_putnbr(size);
-				debug_str(" | ");
-				debug_ptr((void *)size);
-				debug_str("\n");
-				debug_str("Got size    : ");
-				debug_putnbr(tmp->size);
-				debug_str(" | ");
-				debug_ptr((void* )(tmp->size));
-				debug_str("\n");
-				new = tmp;
+				if (ALIGN(tmp->size - 1 - SIZE_OF_CHUNK - size) > SIZE_OF_CHUNK + _Alignof(max_align_t)) {
+					debug_str("Chunk can be splitted from ");
+					debug_putnbr(tmp->size - 1);
+					debug_str(" into ");
+					debug_putnbr(ALIGN(size + SIZE_OF_CHUNK));
+					debug_str(" and ");
+					debug_putnbr(ALIGN(tmp->size - 1 - SIZE_OF_CHUNK - size - _Alignof(max_align_t)));
+					debug_str("\n");
+					t_chunk	*split = (t_chunk *)((char *)tmp + ALIGN(size + SIZE_OF_CHUNK));
+					split->next = tmp->next;
+					split->size = ALIGN(tmp->size - 1 - SIZE_OF_CHUNK - size - _Alignof(max_align_t)) + 1;
+					tmp->next = split;
+					tmp->size = ALIGN(size + SIZE_OF_CHUNK);
+					new = tmp;
+				} else {
+					tmp->size &= ~1;
+					debug_str("Wanted size : ");
+					debug_putnbr(size);
+					debug_str(" | ");
+					debug_ptr((void *)size);
+					debug_str("\n");
+					debug_str("Got size    : ");
+					debug_putnbr(tmp->size);
+					debug_str(" | ");
+					debug_ptr((void* )(tmp->size));
+					debug_str("\n");
+					new = tmp;
+				}
 				debug_str("Chunk head       ");
 				debug_ptr(new);
 				debug_str("\nReturn data from ");
@@ -508,6 +524,21 @@ void free(void *p) {
 	pthread_mutex_unlock(&g_mutex_lock);
 }
 
+bool	check_grow(t_chunk *ptr, size_t size) {
+	size_t	total = ptr->size - SIZE_OF_CHUNK;
+	ptr = ptr->next;
+	for (; total < size && ptr && ptr->size & 1; ptr = ptr->next) {
+		total += ptr->size - 1;
+	}
+	if (total > size) {
+		debug_str("\nSIZE : ");
+		debug_putnbr(size);
+		debug_str("\nTOTAL : ");
+		debug_putnbr(total);
+	}
+	return (total > size);
+}
+
 void	*realloc(void *p, size_t size) {
 	pthread_mutex_lock(&g_mutex_lock);
 	debug_str("###########INSIDE REALLOC##########\n");
@@ -548,20 +579,41 @@ void	*realloc(void *p, size_t size) {
 		pthread_mutex_unlock(&g_mutex_lock);
 		return (p);
 	} else {
-		debug_str("Upgrading from ");
-		debug_putnbr(ptr->size);
-		debug_str(" to ");
-		debug_putnbr(size);
-		debug_str(", changing ptr\n");
-		void *new = mutexless_malloc(size);
-		debug_str("New ptr : ");
-		debug_ptr(new);
-		debug_str("\n");
-		memcpy(new, p, ptr->size - SIZE_OF_CHUNK);
-		debug_str("Freeing old ptr : ");
-		debug_ptr(p);
-		debug_str("\n");
-		mutexless_free(p);
+		void *new = NULL;
+			debug_str("Upgrading from ");
+			debug_putnbr(ptr->size - SIZE_OF_CHUNK);
+			debug_str(" to ");
+			debug_putnbr(size);
+		if (check_grow(ptr, size)) {
+			debug_str("\nGrowing in place, not reallocating a pointer\n");
+			for (; ptr->size - SIZE_OF_CHUNK < size && ptr->next && ((t_chunk *)ptr->next)->size & 1;) {
+				t_chunk	*rm = ptr->next;
+				debug_str("Merged ");
+				debug_ptr(rm);
+				debug_str(" of size ");
+				debug_putnbr(rm->size - 1);
+				debug_str("\n");
+				ptr->next = rm->next;
+				ptr->size += rm->size - 1;
+				rm->next = NULL;
+				rm->size = 0;
+			}
+			debug_str("New ptr size : ");
+			debug_putnbr(ptr->size);
+			debug_str("\n");
+			new = (char *)ptr + SIZE_OF_CHUNK;
+		} else {
+			debug_str("\nCannot grow in place, reallocating a pointer\n");
+			new = mutexless_malloc(size);
+			debug_str("New ptr : ");
+			debug_ptr(new);
+			debug_str("\n");
+			memcpy(new, p, ptr->size - SIZE_OF_CHUNK);
+			debug_str("Freeing old ptr : ");
+			debug_ptr(p);
+			debug_str("\n");
+			mutexless_free(p);
+		}
 		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
 		pthread_mutex_unlock(&g_mutex_lock);
 		return (new);
