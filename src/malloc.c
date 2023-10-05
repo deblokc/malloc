@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/04 20:49:46 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 12:36:07 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -441,13 +441,37 @@ void	mutexless_free(void *p) {
 				}
 			}
 			if (remove_page) {
-				debug_str("No more chunk, removing whole page\n");
-				if (before) {
-					before->next = tmp->next;
-				} else {
-					g_page = tmp->next;
+				size_t	page_size = getpagesize();
+				size_t	tiny = ((NUM / (page_size / TINY) + 1) * page_size);
+				size_t	small = ((NUM / (page_size / SMALL) + 1) * page_size);
+				if (tmp->size == tiny) {
+					debug_str("Page is TINY, checking if we keep him\n");
+					remove_page = false;
+					for (t_page *page = g_page; page; page = page->next) {
+						if (page->size == tiny && page != tmp) {
+							remove_page = true;
+						}
+					}
+				} else if (tmp->size == small) {
+					debug_str("Page is SMALL, checking if we keep him\n");
+					remove_page = false;
+					for (t_page *page = g_page; page; page = page->next) {
+						if (page->size == small && page != tmp) {
+							remove_page = true;
+						}
+					}
 				}
-				munmap(tmp, tmp->size);
+				if (remove_page) {
+					debug_str("No more chunk, removing whole page\n");
+					if (before) {
+						before->next = tmp->next;
+					} else {
+						g_page = tmp->next;
+					}
+					munmap(tmp, tmp->size);
+				} else {
+					debug_str("The page was the last one of its kind, keeping it\n");
+				}
 				break ;
 			}
 		}
