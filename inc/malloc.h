@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:31:27 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/04 19:51:01 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 16:27:21 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,10 +43,7 @@ extern pthread_mutex_t	g_malloc_mutex;
 
 void *realloc(void *p, size_t size);
 void *malloc(size_t size);
-void *_malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
 void free(void *p);
-
-size_t calculate_size(size_t size);
 
 #endif

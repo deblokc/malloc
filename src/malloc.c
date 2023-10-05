@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 15:59:39 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 16:28:49 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,8 +18,6 @@
 t_page				*g_page = NULL;
 
 pthread_mutex_t		g_mutex_lock = PTHREAD_MUTEX_INITIALIZER;
-
-size_t				g_now = 0;
 
 #ifdef DEBUG
 static	size_t	ft_strlen(char *str) {
@@ -125,7 +123,7 @@ static void debug_bin(void *ptr) {
  *  while being a multiple of getpagesize() (4096).
  */
 
-size_t	calculate_size(size_t size) {
+static size_t	calculate_size(size_t size) {
 	size_t page_size = getpagesize();
 	size = SIZE_OF_CHUNK + sizeof(t_page) + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
 	if (size <= TINY) {
@@ -138,7 +136,7 @@ size_t	calculate_size(size_t size) {
 	return ((NUM / (page_size / size) + 1) * page_size);
 }
 
-int	can_fit(size_t size, t_page *page) {
+static int	can_fit(size_t size, t_page *page) {
 //	debug_str("int can_fit(size_t size, t_page *page);\n");
 	t_chunk *tmp = NULL;
 	if (page->chunk) {
@@ -179,7 +177,7 @@ int	can_fit(size_t size, t_page *page) {
 */	return ((page->size - occupied_size) > (size + SIZE_OF_CHUNK));
 }
 
-t_page	*add_page(size_t size) {
+static t_page	*add_page(size_t size) {
 	debug_str("t_page	*add_page(size_t size);\n");
 	t_page	*new = NULL;
 	size_t	size_to_map = calculate_size(size);
@@ -203,7 +201,7 @@ t_page	*add_page(size_t size) {
 	return (new);
 }
 
-t_chunk	*create_chunk(void *addr, size_t size) {
+static t_chunk	*create_chunk(void *addr, size_t size) {
 	debug_str("t_chunk	*create_chunk(void *addr, size_t size);\n");
 	t_chunk	*new;
 
@@ -239,7 +237,7 @@ t_chunk	*create_chunk(void *addr, size_t size) {
 	return (new);
 }
 
-void	*add_chunk(t_page *page, size_t size) {
+static void	*add_chunk(t_page *page, size_t size) {
 	debug_str("void	*add_chunk(t_page *page, size_t size);\n");
 	t_chunk	*new = NULL;
 	t_chunk	*tmp = NULL;
@@ -326,15 +324,11 @@ void	*add_chunk(t_page *page, size_t size) {
 	return ((char *)new + SIZE_OF_CHUNK);
 }
 
-void	*mutexless_malloc(size_t size) {
+static void	*mutexless_malloc(size_t size) {
 	void	*ptr = NULL;
 	t_page	*last = NULL;
 	size_t	calculated_size = calculate_size(size);
 	debug_str("###########INSIDE MALLOC##########\n");
-	debug_str("g_now : ");
-	debug_putnbr(g_now);
-	g_now++;
-	debug_str("\n");
 	debug_str("Wanted size : ");
 	debug_putnbr(size);
 	size_t realsize = SIZE_OF_CHUNK + sizeof(t_page) + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
@@ -404,11 +398,7 @@ void	*malloc(size_t size) {
 	return (p);
 }
 
-void	*_malloc(size_t size) {
-	return (malloc(size));
-}
-
-void	mutexless_free(void *p) {
+static void	mutexless_free(void *p) {
 	debug_str("###########INSIDE FREE##########\n");
 	if (!p || !g_page) {
 		if (!p) {
@@ -524,7 +514,7 @@ void free(void *p) {
 	pthread_mutex_unlock(&g_mutex_lock);
 }
 
-bool	check_grow(t_chunk *ptr, size_t size) {
+static bool	check_grow(t_chunk *ptr, size_t size) {
 	size_t	total = ptr->size - SIZE_OF_CHUNK;
 	ptr = ptr->next;
 	for (; total < size && ptr && ptr->size & 1; ptr = ptr->next) {
