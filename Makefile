@@ -6,7 +6,7 @@
 #    By: tnaton <marvin@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/09/26 15:22:40 by tnaton            #+#    #+#              #
-#    Updated: 2023/10/05 17:04:38 by tnaton           ###   ########.fr        #
+#    Updated: 2023/10/05 18:43:48 by tnaton           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -29,6 +29,10 @@ endif
 LIB_HOST = libft_malloc_$(HOSTTYPE).so
 
 CFLAGS = -Wall -Wextra -Werror -Wpedantic -Wshadow -O3 -g -fPIC 
+
+ifdef DEBUG
+	CFLAGS += -DDEBUG
+endif
 
 CC = gcc
 
@@ -61,12 +65,17 @@ clean:
 
 .PHONY: fclean
 fclean:
-	rm -rf $(OBJDIR) $(LIB) $(LIB_HOST)
+	rm -rf $(OBJDIR) $(LIB) $(LIB_HOST) test0 test1 test2 test3 test4 test5 test6
 
 .PHONY: re
 re: fclean all
 
 .PHONY: test
 test: all
-	$(shell export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`pwd`")
-	$(CC) -L. -g -O0 -I inc test/main.c -lft_malloc
+	$(CC) -o test0 test/test0.c
+	$(CC) -o test1 test/test1.c
+	$(CC) -o test2 test/test2.c
+	$(CC) -o test3 test/test3.c
+	$(CC) -o test4 test/test4.c
+	$(CC) -o test5 test/test5.c
+	$(CC) -o test6 test/test6.c -L. -lft_malloc

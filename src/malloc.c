@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 18:14:57 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 18:43:00 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,11 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#ifndef DEBUG
 bool				g_debug = false;
+#else
+bool				g_debug = true;
+#endif
 
 t_page				*g_page = NULL;
 
