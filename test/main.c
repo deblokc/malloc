@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:46:34 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 17:09:12 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 18:10:48 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,13 +114,14 @@ int main(void) {
 	free(b);
 	printf("#######################################\n");
 */
+	/*
 	char *list[1024];
 	for ( int i = 0; i < 1024; i++) {
 		list[i] = malloc(1024);
 //		free(list[i]);
 	}
 	show_alloc_mem();
-	/*
+	
 	for ( int i = 1; i < 1024; i++) {
 		list[i] = malloc(i);
 		memset(list[i], 'a', i);
@@ -129,7 +130,7 @@ int main(void) {
 	getenv("PDIR");
 
 	*/
-	set_malloc_debug();
+/*	set_malloc_debug();
 	malloc(1);
 	unset_malloc_debug();
 	for (size_t i = 1; i < 5000; i += 16) {
@@ -140,6 +141,11 @@ int main(void) {
 		putstr("\n");
 		memset(data, 'a', i);
 		free(data);
+	}*/
+	(void)malloc(10000);
+	char *a = malloc(42);
+	for (int i = 0; i < 42; i++) {
+		a[i] = ' ' + i;
 	}
-	
+	show_alloc_mem_hex();
 }

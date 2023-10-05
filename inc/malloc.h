@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:31:27 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 17:08:17 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 18:08:30 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,7 @@ void *calloc(size_t nmemb, size_t size);
 void free(void *p);
 
 void show_alloc_mem(void);
+void show_alloc_mem_hex(void);
 void set_malloc_debug(void);
 void unset_malloc_debug(void);
 

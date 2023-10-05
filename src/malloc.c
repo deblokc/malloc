@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 17:09:47 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 18:14:57 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,6 +92,15 @@ static void debug_str(char *str) {
 static void debug_putnbr(int i) {
 	if (g_debug) {
 		ft_itoa_base(i, "0123456789");
+	}
+}
+
+static void debug_hex(int i) {
+	if (g_debug) {
+		if (i < 16) {
+			putstr("0");
+		}
+		ft_itoa_base(i, "0123456789abcdef");
 	}
 }
 
@@ -662,6 +671,31 @@ void	set_malloc_debug(void) {
 
 void	unset_malloc_debug(void) {
 	pthread_mutex_lock(&g_mutex_lock);
+	g_debug = false;
+	pthread_mutex_unlock(&g_mutex_lock);
+}
+
+void	show_alloc_mem_hex(void) {
+	pthread_mutex_lock(&g_mutex_lock);
+	g_debug = true;
+	for (t_page *page = g_page; page; page = page->next) {
+		for (t_chunk *chunk = page->chunk; chunk; chunk = chunk->next) {
+			if (!(chunk->size & 1)) {
+				char *ptr = (char *)chunk + SIZE_OF_CHUNK;
+				for (size_t offset = 0; offset < chunk->size - SIZE_OF_CHUNK; offset += 16) {
+					debug_ptr(ptr + offset);
+					for (size_t i = 0; i < 16; i++) {
+						debug_str(" ");
+						debug_hex(*(ptr + offset + i));
+						i++;
+						debug_hex(*(ptr + offset + i));
+					}
+					debug_str("\n");
+				}
+				debug_str("\n");
+			}
+		}
+	}
 	g_debug = false;
 	pthread_mutex_unlock(&g_mutex_lock);
 }
