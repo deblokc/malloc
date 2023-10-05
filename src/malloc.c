@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 16:28:49 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 16:49:46 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -623,4 +623,42 @@ void	*calloc(size_t nmemb, size_t size) {
 	debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
 	pthread_mutex_unlock(&g_mutex_lock);
 	return (p);
+}
+
+void	show_alloc_mem(void) {
+	pthread_mutex_lock(&g_mutex_lock);
+	size_t	page_size = getpagesize();
+	size_t	tiny = ((NUM / (page_size / TINY) + 1) * page_size);
+	size_t	small = ((NUM / (page_size / SMALL) + 1) * page_size);
+	size_t	total = 0;
+	for (t_page *page = g_page; page; page = page->next) {
+		if (page->size == tiny) {
+			debug_str("TINY : ");
+			debug_ptr(page);
+			debug_str("\n");
+		} else if (page->size == small) {
+			debug_str("SMALL : ");
+			debug_ptr(page);
+			debug_str("\n");
+		} else {
+			debug_str("LARGE : ");
+			debug_ptr(page);
+			debug_str("\n");
+		}
+		for (t_chunk *chunk = page->chunk; chunk; chunk = chunk->next) {
+			if (!(chunk->size & 1)) {
+				total += chunk->size - SIZE_OF_CHUNK;
+				debug_ptr((char *)chunk + SIZE_OF_CHUNK);
+				debug_str(" - ");
+				debug_ptr((char *)chunk + chunk->size);
+				debug_str(" : ");
+				debug_putnbr(chunk->size - SIZE_OF_CHUNK);
+				debug_str(" bytes\n");
+			}
+		}
+		debug_str("Total : ");
+		debug_putnbr(total);
+		debug_str(" bytes\n");
+	}
+	pthread_mutex_unlock(&g_mutex_lock);
 }
