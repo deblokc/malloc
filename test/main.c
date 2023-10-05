@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:46:34 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 12:37:07 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 17:09:12 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,6 +119,7 @@ int main(void) {
 		list[i] = malloc(1024);
 //		free(list[i]);
 	}
+	show_alloc_mem();
 	/*
 	for ( int i = 1; i < 1024; i++) {
 		list[i] = malloc(i);
@@ -128,8 +129,9 @@ int main(void) {
 	getenv("PDIR");
 
 	*/
-	/*
+	set_malloc_debug();
 	malloc(1);
+	unset_malloc_debug();
 	for (size_t i = 1; i < 5000; i += 16) {
 		void *data = malloc(i);
 		ft_itoa_base((unsigned long long)data, "0123456789abcdef");
@@ -139,7 +141,5 @@ int main(void) {
 		memset(data, 'a', i);
 		free(data);
 	}
-
-
-	*/
+	
 }

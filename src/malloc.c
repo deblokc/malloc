@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 16:49:46 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 17:09:47 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,12 @@
 #include <unistd.h>
 #include <stdio.h>
 
+bool				g_debug = false;
+
 t_page				*g_page = NULL;
 
 pthread_mutex_t		g_mutex_lock = PTHREAD_MUTEX_INITIALIZER;
 
-#ifdef DEBUG
 static	size_t	ft_strlen(char *str) {
 	if (!str) {
 		return (0);
@@ -75,7 +76,6 @@ static void ft_itoa_base(unsigned long long nb, char *base_to)
 	num[size] = '\0';
 	putstr(num);
 }
-#endif
 
 /*
  *
@@ -84,37 +84,29 @@ static void ft_itoa_base(unsigned long long nb, char *base_to)
  */
 
 static void debug_str(char *str) {
-#ifdef DEBUG
-	putstr(str);
-#else
-	(void)str;
-#endif
+	if (g_debug) {
+		putstr(str);
+	}
 }
 
 static void debug_putnbr(int i) {
-#ifdef DEBUG
-	ft_itoa_base(i, "0123456789");
-#else
-	(void)i;
-#endif
+	if (g_debug) {
+		ft_itoa_base(i, "0123456789");
+	}
 }
 
 static void debug_ptr(void *ptr) {
-#ifdef DEBUG
-	if (write(1, "0x", 2)) {}
-	ft_itoa_base((unsigned long long)ptr, "0123456789abcdef");
-#else
-	(void)ptr;
-#endif
+	if (g_debug) {
+		if (write(1, "0x", 2)) {}
+		ft_itoa_base((unsigned long long)ptr, "0123456789abcdef");
+	}
 }
 
 static void debug_bin(void *ptr) {
-#ifdef DEBUG
-	if (write(1, "0b", 2)) {}
-	ft_itoa_base((unsigned long long)ptr, "01");
-#else
-	(void)ptr;
-#endif
+	if (g_debug) {
+		if (write(1, "0b", 2)) {}
+		ft_itoa_base((unsigned long long)ptr, "01");
+	}
 }
 
 
@@ -364,9 +356,6 @@ static void	*mutexless_malloc(size_t size) {
 		debug_str("Did not find any available page, adding one\n");
 		if (last) {
 			last->next = add_page(size);
-			debug_str("hum : ");
-			debug_ptr(&last->next);
-			debug_str("\n");
 			if (!last->next) {
 				return NULL;
 			}
@@ -627,6 +616,7 @@ void	*calloc(size_t nmemb, size_t size) {
 
 void	show_alloc_mem(void) {
 	pthread_mutex_lock(&g_mutex_lock);
+	g_debug = true;
 	size_t	page_size = getpagesize();
 	size_t	tiny = ((NUM / (page_size / TINY) + 1) * page_size);
 	size_t	small = ((NUM / (page_size / SMALL) + 1) * page_size);
@@ -656,9 +646,22 @@ void	show_alloc_mem(void) {
 				debug_str(" bytes\n");
 			}
 		}
-		debug_str("Total : ");
-		debug_putnbr(total);
-		debug_str(" bytes\n");
 	}
+	debug_str("Total : ");
+	debug_putnbr(total);
+	debug_str(" bytes\n");
+	g_debug = false;
+	pthread_mutex_unlock(&g_mutex_lock);
+}
+
+void	set_malloc_debug(void) {
+	pthread_mutex_lock(&g_mutex_lock);
+	g_debug = true;
+	pthread_mutex_unlock(&g_mutex_lock);
+}
+
+void	unset_malloc_debug(void) {
+	pthread_mutex_lock(&g_mutex_lock);
+	g_debug = false;
 	pthread_mutex_unlock(&g_mutex_lock);
 }
