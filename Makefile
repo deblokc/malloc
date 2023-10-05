@@ -6,7 +6,7 @@
 #    By: tnaton <marvin@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/09/26 15:22:40 by tnaton            #+#    #+#              #
-#    Updated: 2023/10/05 18:43:48 by tnaton           ###   ########.fr        #
+#    Updated: 2023/10/05 19:27:44 by tnaton           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -72,10 +72,10 @@ re: fclean all
 
 .PHONY: test
 test: all
-	$(CC) -o test0 test/test0.c
-	$(CC) -o test1 test/test1.c
-	$(CC) -o test2 test/test2.c
-	$(CC) -o test3 test/test3.c
-	$(CC) -o test4 test/test4.c
-	$(CC) -o test5 test/test5.c
-	$(CC) -o test6 test/test6.c -L. -lft_malloc
+	$(CC) -O0 -o test0 test/test0.c
+	$(CC) -O0 -o test1 test/test1.c
+	$(CC) -O0 -o test2 test/test2.c
+	$(CC) -O0 -o test3 test/test3.c
+	$(CC) -O0 -o test4 test/test4.c
+	$(CC) -O0 -o test5 test/test5.c
+	$(CC) -O0 -o test6 test/test6.c -L. -lft_malloc
