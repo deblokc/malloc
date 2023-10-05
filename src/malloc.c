@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 12:36:07 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/05 14:27:33 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -322,7 +322,6 @@ void	*mutexless_malloc(size_t size) {
 	debug_str("Wanted size : ");
 	debug_putnbr(size);
 	size_t realsize = SIZE_OF_CHUNK + sizeof(t_page) + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
-	
 	if (realsize < TINY) {
 		debug_str("\nSize will be TINY : ");
 		debug_putnbr(TINY);
@@ -434,8 +433,19 @@ void	mutexless_free(void *p) {
 					debug_str("Changing chunk status to freed\n");
 					current->size += 1;
 					freed = true;
-				}
-				if (remove_page && !(current->size & 1)) {
+					for (; current->next && ((t_chunk *)current->next)->size & 1;) {
+						t_chunk *rm = current->next;
+						debug_str("Defragmented a little, freed chunk size ");
+						debug_putnbr(current->size - 1);
+						debug_str(" => ");
+						debug_putnbr(current->size - 1 + rm->size - 1);
+						debug_str("\n");
+						current->next = rm->next;
+						current->size += rm->size - 1;
+						rm->next = NULL;
+						rm->size = 0;
+					}
+				} else if (remove_page && !(current->size & 1)) {
 					debug_str("Still used blocks, will not remove page\n");
 					remove_page = false;
 				}
