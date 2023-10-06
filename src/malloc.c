@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/06 12:55:42 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/06 14:24:14 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -356,8 +356,6 @@ static void	*mutexless_malloc(size_t size) {
 	debug_str(" | ");
 	debug_ptr((void *)calculated_size);
 	debug_str("\n");
-	
-	// iterate through pages 
 	for (t_page *tmp = g_page; tmp; tmp = tmp->next) {
 		if (tmp->size == calculated_size) {
 			if (can_fit(size, tmp)) {
