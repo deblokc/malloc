@@ -1,12 +1,15 @@
 #include <stdlib.h>
 
+void show_alloc_mem(void);
+
 int main()
 {
-    malloc(1024);
-    malloc(1024 * 32);
-    malloc(1024 * 1024);
-    malloc(1024 * 1024 * 16);
-    malloc(1024 * 1024 * 128);
+    void *p;
+    p = malloc(1024);
+    p = malloc(1024 * 32);
+    p = malloc(1024 * 1024);
+    p = malloc(1024 * 1024 * 16);
+    p = malloc(1024 * 1024 * 128);
     show_alloc_mem(); 
     return (0); 
 }

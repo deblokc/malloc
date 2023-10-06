@@ -6,7 +6,7 @@
 /*   By: tnaton <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 15:30:40 by tnaton            #+#    #+#             */
-/*   Updated: 2023/10/05 19:11:21 by tnaton           ###   ########.fr       */
+/*   Updated: 2023/10/06 12:55:42 by tnaton           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -254,13 +254,6 @@ static void	*add_chunk(t_page *page, size_t size) {
 	} else {
 		t_chunk	*prev = page->chunk;
 		for (tmp = page->chunk; tmp; tmp = tmp->next) {
-			if (tmp->size & 1) {
-				debug_str("?????\n");
-				debug_putnbr(size);
-				debug_str(" VS ");
-				debug_putnbr(tmp->size - 1 - SIZE_OF_CHUNK);
-				debug_str("\n");
-			}
 			if (tmp->size & 1 && (tmp->size - 1 - SIZE_OF_CHUNK) >= size) {
 				debug_str("Found a freed chunk that can be reused at ");
 				debug_ptr((char *)tmp);
@@ -345,6 +338,11 @@ static void	*mutexless_malloc(size_t size) {
 	debug_str("###########INSIDE MALLOC##########\n");
 	debug_str("Wanted size : ");
 	debug_putnbr(size);
+	if (size > 2147483647) {
+		debug_str("\nSIZE COULD OVERFLOW, RETURNING NULL\n");
+		debug_str("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n");
+		return NULL;
+	}
 	size_t realsize = SIZE_OF_CHUNK + sizeof(t_page) + (((size / _Alignof(max_align_t)) + !!(size % _Alignof(max_align_t))) * _Alignof(max_align_t));
 	if (realsize < TINY) {
 		debug_str("\nSize will be TINY : ");

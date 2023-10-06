@@ -6,7 +6,7 @@
 #    By: tnaton <marvin@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/09/26 15:22:40 by tnaton            #+#    #+#              #
-#    Updated: 2023/10/05 19:27:44 by tnaton           ###   ########.fr        #
+#    Updated: 2023/10/06 12:37:25 by tnaton           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -72,6 +72,7 @@ re: fclean all
 
 .PHONY: test
 test: all
+	$(CC) -O0 -o test_malloc test/test.c -L. -lft_malloc
 	$(CC) -O0 -o test0 test/test0.c
 	$(CC) -O0 -o test1 test/test1.c
 	$(CC) -O0 -o test2 test/test2.c
