@@ -6,7 +6,7 @@
 #    By: tnaton <marvin@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/09/26 15:22:40 by tnaton            #+#    #+#              #
-#    Updated: 2023/10/06 12:37:25 by tnaton           ###   ########.fr        #
+#    Updated: 2023/10/06 14:17:48 by tnaton           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -80,3 +80,4 @@ test: all
 	$(CC) -O0 -o test4 test/test4.c
 	$(CC) -O0 -o test5 test/test5.c
 	$(CC) -O0 -o test6 test/test6.c -L. -lft_malloc
+	$(CC) -O0 -o test_thread test/thread.c
