@@ -1,6 +1,6 @@
 # Malloc
 
-This is an implemenation of the library malloc (`man 3 malloc`). It includes `malloc`, `free`, `calloc` and `realloc`.
+This is an implementation of the library malloc (`man 3 malloc`). It includes `malloc`, `free`, `calloc` and `realloc`.
 
 ## Implementation
 
